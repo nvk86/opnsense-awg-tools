@@ -1,0 +1,6 @@
+src/awg
+src/*.o
+src/*.d
+src/wincompat/*.o
+src/wincompat/*.lib
+src/wincompat/*.dll
