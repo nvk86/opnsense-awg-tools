@@ -4,7 +4,9 @@ AmneziaWG userspace tools for FreeBSD/OPNsense, paired with `opnsense-awg-kmod`.
 
 The source is derived from `amnezia-vpn/amneziawg-tools` and includes the FreeBSD nvlist backend required by the FreeBSD AmneziaWG 3.1 kernel module.
 
-Current protocol/tools version: `3.1.20260812`.
+Current paired protocol/package version: `3.1.20260906`.
+
+The `3.1.20260906` protocol update is kernel-side only (`amneziawg-linux-kernel-module` commit `4569c4c`, random-trailer handling for I1-I5 and dummy junk packets). It does not change the userspace configuration ABI. The tools package is version-aligned with the matching kmod so the OPNsense installer can enforce a coherent release pair.
 
 ## FreeBSD support
 
