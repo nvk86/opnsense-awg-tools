@@ -34,7 +34,7 @@ gmake
 
 The resulting binary is `src/awg`.
 
-For packaging, use a matching tag from this repository and `opnsense-awg-kmod`.
+The tools and kmod repositories are versioned independently. Publish a new tools release only when the userspace implementation changes or a new userspace ABI requirement is introduced; kernel-only updates do not require a tools version bump.
 
 ## Compatibility note
 
