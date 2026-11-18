@@ -424,8 +424,10 @@ cmd_up() {
 	for i in $(while read -r _ i; do for i in $i; do [[ $i =~ ^[0-9a-z:.]+/[0-9]+$ ]] && echo "$i"; done; done < <(awg show "$INTERFACE" allowed-ips) | sort -nr -k 2 -t /); do
 		add_route "$i"
 	done
-	[[ $AUTO_ROUTE4 -eq 1 || $AUTO_ROUTE6 -eq 1 ]] && set_endpoint_direct_route
-	monitor_daemon
+	if [[ $AUTO_ROUTE4 -eq 1 || $AUTO_ROUTE6 -eq 1 ]]; then
+		set_endpoint_direct_route
+		monitor_daemon
+	fi
 	execute_hooks "${POST_UP[@]}"
 	trap 'clean_temp; exit' INT TERM EXIT
 }
