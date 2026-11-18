@@ -36,6 +36,20 @@ The resulting binary is `src/awg`.
 
 The tools and kmod repositories are versioned independently. Publish a new tools release only when the userspace implementation changes or a new userspace ABI requirement is introduced; kernel-only updates do not require a tools version bump.
 
+### Building the FreeBSD package
+
+The FreeBSD/OPNsense package can be built directly from source on FreeBSD 15 amd64.
+
+Requirements: `gmake`, `pkg`, `bash`, and the FreeBSD C build toolchain.
+
+```sh
+./packaging/freebsd/build-pkg.sh 3.1.20260812_1
+```
+
+The build script compiles `awg` in a temporary directory, validates the `awg-quick` shell syntax, and creates the package and its SHA-256 checksum in `dist/`.
+
+The generated package contains `awg`, `awg-quick`, bash completions, and manual pages. Building the package does not install software or modify running interfaces.
+
 ## Compatibility note
 
 `AdvancedSecurity` is a legacy/capability peer field in the cross-platform tools. It is not part of the FreeBSD nvlist peer ABI implemented by this port. `AdvancedSecurity = off` is tolerated for compatibility with configs exported by other platforms; `AdvancedSecurity = on` is rejected instead of being silently ignored.
