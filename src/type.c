@@ -5,24 +5,49 @@
 #include <stdlib.h>
 
 bool u32_range_from_string(u32_range_t *range, const char *str) {
-    unsigned long lo, hi;
-    char *end;
+    uint32_t bounds[2] = { 0, 0 };
+    const char *p = str;
 
-    lo = strtoul(str, &end, 10);
-    if (end == str || lo > UINT32_MAX)
+    if (!range || !p || !*p)
         return false;
 
-    if (*end) {
-        if (*end != '-')
+    for (int part = 0; part < 2; ++part) {
+        uint32_t number = 0;
+        const char *start = p;
+
+        while (*p >= '0' && *p <= '9') {
+            uint32_t digit = (uint32_t)(*p - '0');
+
+            if (number > (UINT32_MAX - digit) / 10)
+                return false;
+
+            number = number * 10 + digit;
+            ++p;
+        }
+
+        if (p == start)
             return false;
-        hi = strtoul(end + 1, &end, 10);
-        if (*end || hi > UINT32_MAX || hi < lo)
+
+        bounds[part] = number;
+
+        if (part == 0 && *p == '-') {
+            ++p;
+            continue;
+        }
+
+        if (*p != '\0')
             return false;
-    } else {
-        hi = lo;
+
+        if (part == 0)
+            bounds[1] = bounds[0];
+
+        break;
     }
 
-    *range = u32_range_init(lo, hi);
+    if (bounds[0] > bounds[1])
+        return false;
+
+    *range = u32_range_init(bounds[0], bounds[1]);
     return true;
 }
 
