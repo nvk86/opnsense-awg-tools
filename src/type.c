@@ -42,14 +42,14 @@ int u16_range_from_string(u16_range_t *range, const char *str) {
     char *end;
 
     lo = strtoul(str, &end, 10);
-    if (end == str || lo > UINT32_MAX)
+    if (end == str || lo > UINT16_MAX)
         return false;
 
     if (*end) {
         if (*end != '-')
             return false;
         hi = strtoul(end + 1, &end, 10);
-        if (*end || hi > UINT32_MAX || hi < lo)
+        if (*end || hi > UINT16_MAX || hi < lo)
             return false;
     } else {
         hi = lo;
