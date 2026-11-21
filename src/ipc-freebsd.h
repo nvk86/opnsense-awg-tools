@@ -383,7 +383,7 @@ static int kernel_get_device(struct wgdevice **device, const char *ifname)
 			number = nvlist_get_number(nvl_aips[j], "cidr");
 			if (nvlist_exists_binary(nvl_aips[j], "ipv4")) {
 				binary = nvlist_get_binary(nvl_aips[j], "ipv4", &size);
-				if (!binary || number > 32) {
+				if (!binary || size != sizeof(aip->ip4) || number > 32) {
 					ret = EINVAL;
 					goto err_allowed_ips;
 				}
@@ -393,7 +393,7 @@ static int kernel_get_device(struct wgdevice **device, const char *ifname)
 			} else {
 				assert(nvlist_exists_binary(nvl_aips[j], "ipv6"));
 				binary = nvlist_get_binary(nvl_aips[j], "ipv6", &size);
-				if (!binary || number > 128) {
+				if (!binary || size != sizeof(aip->ip6) || number > 128) {
 					ret = EINVAL;
 					goto err_allowed_ips;
 				}
