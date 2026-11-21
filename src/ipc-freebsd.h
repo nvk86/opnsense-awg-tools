@@ -12,6 +12,17 @@
 #define IPC_SUPPORTS_KERNEL_INTERFACE
 #define MAX_AWG_STRING_LEN (64U * 1024U)
 
+/*
+ * nvlist binary values have an explicit length and are not C strings.
+ * Validate the complete NUL-terminated representation before passing it
+ * to string parsers or strdup(), avoiding reads beyond the nvlist buffer.
+ */
+static bool awg_nv_valid_string(const void *data, size_t len)
+{
+	return data != NULL && len > 0 && len < MAX_AWG_STRING_LEN &&
+	    strnlen((const char *)data, len) == len - 1;
+}
+
 static int get_dgram_socket(void)
 {
 	static int sock = -1;
@@ -143,7 +154,7 @@ static int kernel_get_device(struct wgdevice **device, const char *ifname)
 	}
 	if (nvlist_exists_binary(nvl_device, "h1")) {
 		binary = nvlist_get_binary(nvl_device, "h1", &size);
-		if (binary && size < MAX_AWG_STRING_LEN)
+		if (awg_nv_valid_string(binary, size))
 		{
 			if (u32_range_from_string(&dev->init_header, (const char *)binary))
 				dev->flags |= WGDEVICE_HAS_H1;
@@ -151,7 +162,7 @@ static int kernel_get_device(struct wgdevice **device, const char *ifname)
 	}
 	if (nvlist_exists_binary(nvl_device, "h2")) {
 		binary = nvlist_get_binary(nvl_device, "h2", &size);
-		if (binary && size < MAX_AWG_STRING_LEN)
+		if (awg_nv_valid_string(binary, size))
 		{
 			if (u32_range_from_string(&dev->resp_header, (const char *)binary))
 				dev->flags |= WGDEVICE_HAS_H2;
@@ -159,7 +170,7 @@ static int kernel_get_device(struct wgdevice **device, const char *ifname)
 	}
 	if (nvlist_exists_binary(nvl_device, "h3")) {
 		binary = nvlist_get_binary(nvl_device, "h3", &size);
-		if (binary && size < MAX_AWG_STRING_LEN)
+		if (awg_nv_valid_string(binary, size))
 		{
 			if (u32_range_from_string(&dev->cookie_header, (const char *)binary))
 				dev->flags |= WGDEVICE_HAS_H3;
@@ -167,7 +178,7 @@ static int kernel_get_device(struct wgdevice **device, const char *ifname)
 	}
 	if (nvlist_exists_binary(nvl_device, "h4")) {
 		binary = nvlist_get_binary(nvl_device, "h4", &size);
-		if (binary && size < MAX_AWG_STRING_LEN)
+		if (awg_nv_valid_string(binary, size))
 		{
 			if (u32_range_from_string(&dev->transport_header, (const char *)binary))
 				dev->flags |= WGDEVICE_HAS_H4;
@@ -176,7 +187,7 @@ static int kernel_get_device(struct wgdevice **device, const char *ifname)
 	if (nvlist_exists_binary(nvl_device, "i1"))
 	{
 		binary = nvlist_get_binary(nvl_device, "i1", &size);
-		if (binary && size < MAX_AWG_STRING_LEN)
+		if (awg_nv_valid_string(binary, size))
 		{
 			dev->i1 = strdup((const char*)binary);
 			if (!dev->i1) {
@@ -189,7 +200,7 @@ static int kernel_get_device(struct wgdevice **device, const char *ifname)
 	if (nvlist_exists_binary(nvl_device, "i2"))
 	{
 		binary = nvlist_get_binary(nvl_device, "i2", &size);
-		if (binary && size < MAX_AWG_STRING_LEN)
+		if (awg_nv_valid_string(binary, size))
 		{
 			dev->i2 = strdup((const char*)binary);
 			if (!dev->i2) {
@@ -202,7 +213,7 @@ static int kernel_get_device(struct wgdevice **device, const char *ifname)
 	if (nvlist_exists_binary(nvl_device, "i3"))
 	{
 		binary = nvlist_get_binary(nvl_device, "i3", &size);
-		if (binary && size < MAX_AWG_STRING_LEN)
+		if (awg_nv_valid_string(binary, size))
 		{
 			dev->i3 = strdup((const char*)binary);
 			if (!dev->i3) {
@@ -215,7 +226,7 @@ static int kernel_get_device(struct wgdevice **device, const char *ifname)
 	if (nvlist_exists_binary(nvl_device, "i4"))
 	{
 		binary = nvlist_get_binary(nvl_device, "i4", &size);
-		if (binary && size < MAX_AWG_STRING_LEN)
+		if (awg_nv_valid_string(binary, size))
 		{
 			dev->i4 = strdup((const char*)binary);
 			if (!dev->i4) {
@@ -228,7 +239,7 @@ static int kernel_get_device(struct wgdevice **device, const char *ifname)
 	if (nvlist_exists_binary(nvl_device, "i5"))
 	{
 		binary = nvlist_get_binary(nvl_device, "i5", &size);
-		if (binary && size < MAX_AWG_STRING_LEN)
+		if (awg_nv_valid_string(binary, size))
 		{
 			dev->i5 = strdup((const char*)binary);
 			if (!dev->i5) {
