@@ -646,6 +646,8 @@ static int kernel_set_device(struct wgdevice *dev)
 		return ret;
 	}
 	ret = ioctl(s, SIOCSWG, &wgd);
+	if (ret < 0)
+		ret = -errno;
 	free(wgd.wgd_data);
 	return ret;
 
