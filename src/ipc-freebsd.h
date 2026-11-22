@@ -570,6 +570,11 @@ static int kernel_set_device(struct wgdevice *dev)
 	if (dev->flags & WGDEVICE_REPLACE_PEERS)
 		nvlist_add_bool(nvl_device, "replace-peers", true);
 
+	if ((ret = nvlist_error(nvl_device)) != 0) {
+		ret = -ret;
+		goto err;
+	}
+
 	for_each_wgpeer(dev, peer) {
 		size_t aip_count = 0, j = 0;
 		nvlist_t **nvl_aips = NULL;
@@ -596,6 +601,10 @@ static int kernel_set_device(struct wgdevice *dev)
 			nvlist_add_bool(nvl_peers[i], "replace-allowedips", true);
 		if (peer->flags & WGPEER_REMOVE_ME)
 			nvlist_add_bool(nvl_peers[i], "remove", true);
+		if ((ret = nvlist_error(nvl_peers[i])) != 0) {
+			ret = -ret;
+			goto err_peer;
+		}
 		for_each_wgallowedip(peer, aip) {
 			nvl_aips[j] = nvlist_create(0);
 			if (!nvl_aips[j])
@@ -607,10 +616,18 @@ static int kernel_set_device(struct wgdevice *dev)
 				nvlist_add_binary(nvl_aips[j], "ipv4", &aip->ip4, sizeof(aip->ip4));
 			else if (aip->family == AF_INET6)
 				nvlist_add_binary(nvl_aips[j], "ipv6", &aip->ip6, sizeof(aip->ip6));
+			if ((ret = nvlist_error(nvl_aips[j])) != 0) {
+				ret = -ret;
+				goto err_peer;
+			}
 			++j;
 		}
 		if (j) {
 			nvlist_add_nvlist_array(nvl_peers[i], "allowed-ips", (const nvlist_t *const *)nvl_aips, j);
+			if ((ret = nvlist_error(nvl_peers[i])) != 0) {
+				ret = -ret;
+				goto err_peer;
+			}
 			for (j = 0; j < aip_count; ++j)
 				nvlist_destroy(nvl_aips[j]);
 			free(nvl_aips);
@@ -619,7 +636,8 @@ static int kernel_set_device(struct wgdevice *dev)
 		continue;
 
 	err_peer:
-		ret = -errno;
+		if (!ret)
+			ret = errno ? -errno : -ENOMEM;
 		for (j = 0; j < aip_count && nvl_aips; ++j)
 			nvlist_destroy(nvl_aips[j]);
 		free(nvl_aips);
@@ -629,16 +647,26 @@ static int kernel_set_device(struct wgdevice *dev)
 	}
 	if (i) {
 		nvlist_add_nvlist_array(nvl_device, "peers", (const nvlist_t *const *)nvl_peers, i);
+		if ((ret = nvlist_error(nvl_device)) != 0) {
+			ret = -ret;
+			goto err;
+		}
 		for (i = 0; i < peer_count; ++i)
 			nvlist_destroy(nvl_peers[i]);
 		free(nvl_peers);
 		nvl_peers = NULL;
 	}
+	if ((ret = nvlist_error(nvl_device)) != 0) {
+		ret = -ret;
+		goto err;
+	}
 	wgd.wgd_data = nvlist_pack(nvl_device, &wgd.wgd_size);
 	nvlist_destroy(nvl_device);
 	nvl_device = NULL;
-	if (!wgd.wgd_data)
+	if (!wgd.wgd_data) {
+		ret = errno ? -errno : -ENOMEM;
 		goto err;
+	}
 	s = get_dgram_socket();
 	if (s < 0) {
 		ret = -errno;
