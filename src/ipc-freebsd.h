@@ -419,7 +419,7 @@ static int kernel_get_device(struct wgdevice **device, const char *ifname)
 			if (nvlist_exists_binary(nvl_aips[j], "ipv4")) {
 				binary = nvlist_get_binary(nvl_aips[j], "ipv4", &size);
 				if (!binary || size != sizeof(aip->ip4) || number > 32) {
-					ret = EINVAL;
+					ret = -EINVAL;
 					goto err_allowed_ips;
 				}
 				aip->family = AF_INET;
@@ -429,7 +429,7 @@ static int kernel_get_device(struct wgdevice **device, const char *ifname)
 				assert(nvlist_exists_binary(nvl_aips[j], "ipv6"));
 				binary = nvlist_get_binary(nvl_aips[j], "ipv6", &size);
 				if (!binary || size != sizeof(aip->ip6) || number > 128) {
-					ret = EINVAL;
+					ret = -EINVAL;
 					goto err_allowed_ips;
 				}
 				aip->family = AF_INET6;
@@ -480,7 +480,7 @@ err:
 		ret = -errno;
 	free(wgd.wgd_data);
 	nvlist_destroy(nvl_device);
-	free(dev);
+	free_wgdevice(dev);
 	return ret;
 }
 
