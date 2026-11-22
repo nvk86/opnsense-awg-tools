@@ -82,11 +82,46 @@ static int kernel_get_device(struct wgdevice **device, const char *ifname)
 	if (ioctl(s, SIOCGWG, &wgd) < 0)
 		goto err;
 
-	wgd.wgd_data = malloc(wgd.wgd_size);
-	if (!wgd.wgd_data)
-		goto err;
-	if (ioctl(s, SIOCGWG, &wgd) < 0)
-		goto err;
+	/*
+	 * The configuration can grow between the size probe and the data
+	 * fetch. Retry ENOSPC with a larger buffer, but bound allocations
+	 * and retries if another process keeps changing the peer list.
+	 */
+	{
+		size_t capacity = wgd.wgd_size;
+		unsigned int attempt;
+		const size_t max_size = 16U * 1024U * 1024U;
+
+		if (!capacity || capacity > max_size) {
+			ret = -EOVERFLOW;
+			goto err;
+		}
+		for (attempt = 0; attempt < 8; ++attempt) {
+			void *data = realloc(wgd.wgd_data, capacity);
+			if (!data) {
+				ret = -ENOMEM;
+				goto err;
+			}
+			wgd.wgd_data = data;
+			wgd.wgd_size = capacity;
+			if (ioctl(s, SIOCGWG, &wgd) == 0)
+				break;
+			if (errno != ENOSPC)
+				goto err;
+			if (capacity >= max_size) {
+				ret = -EOVERFLOW;
+				goto err;
+			}
+			capacity = wgd.wgd_size > capacity ?
+			    wgd.wgd_size : capacity * 2;
+			if (capacity > max_size)
+				capacity = max_size;
+		}
+		if (attempt == 8) {
+			ret = -ENOSPC;
+			goto err;
+		}
+	}
 
 	dev = calloc(1, sizeof(*dev));
 	if (!dev)
