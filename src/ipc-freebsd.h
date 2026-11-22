@@ -681,7 +681,7 @@ static int kernel_set_device(struct wgdevice *dev)
 
 err:
 	if (!ret)
-		ret = -errno;
+		ret = errno ? -errno : -ENOMEM;
 	for (i = 0; i < peer_count && nvl_peers; ++i)
 		nvlist_destroy(nvl_peers[i]);
 	free(nvl_peers);
