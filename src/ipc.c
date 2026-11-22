@@ -88,11 +88,17 @@ int ipc_get_device(struct wgdevice **dev, const char *iface)
 
 int ipc_set_device(struct wgdevice *dev)
 {
+	int ret;
+
 #ifdef IPC_SUPPORTS_KERNEL_INTERFACE
 	if (userspace_has_wireguard_interface(dev->name))
-		return userspace_set_device(dev);
-	return kernel_set_device(dev);
+		ret = userspace_set_device(dev);
+	else
+		ret = kernel_set_device(dev);
 #else
-	return userspace_set_device(dev);
+	ret = userspace_set_device(dev);
 #endif
+	if (ret < 0)
+		errno = -ret;
+	return ret;
 }
