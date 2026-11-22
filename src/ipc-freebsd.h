@@ -364,6 +364,12 @@ static int kernel_get_device(struct wgdevice **device, const char *ifname)
 		peer = calloc(1, sizeof(*peer));
 		if (!peer)
 			goto err_peer;
+		/* Attach immediately so error cleanup frees partial AllowedIPs. */
+		if (!dev->first_peer)
+			dev->first_peer = peer;
+		else
+			dev->last_peer->next_peer = peer;
+		dev->last_peer = peer;
 		if (nvlist_exists_binary(nvl_peers[i], "public-key")) {
 			binary = nvlist_get_binary(nvl_peers[i], "public-key", &size);
 			if (binary && size == sizeof(peer->public_key)) {
@@ -447,7 +453,7 @@ static int kernel_get_device(struct wgdevice **device, const char *ifname)
 
 		err_allowed_ips:
 			if (!ret)
-				ret = -errno;
+				ret = errno ? -errno : -ENOMEM;
 			free(aip);
 			goto err_peer;
 		}
@@ -455,17 +461,11 @@ static int kernel_get_device(struct wgdevice **device, const char *ifname)
 		/* Nothing leaked, hopefully -- ownership transferred or aip freed. */
 		assert(aip == NULL);
 	skip_allowed_ips:
-		if (!dev->first_peer)
-			dev->first_peer = peer;
-		else
-			dev->last_peer->next_peer = peer;
-		dev->last_peer = peer;
 		continue;
 
 	err_peer:
 		if (!ret)
-			ret = -errno;
-		free(peer);
+			ret = errno ? -errno : -ENOMEM;
 		goto err;
 	}
 
@@ -477,7 +477,7 @@ skip_peers:
 
 err:
 	if (!ret)
-		ret = -errno;
+		ret = errno ? -errno : -ENOMEM;
 	free(wgd.wgd_data);
 	nvlist_destroy(nvl_device);
 	free_wgdevice(dev);
